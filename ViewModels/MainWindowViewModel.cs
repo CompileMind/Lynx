@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Controls.Shapes;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Lynx.Models;
 using System.Collections.ObjectModel;
@@ -17,7 +18,23 @@ namespace Lynx.ViewModels
         [ObservableProperty]
         private bool _isSearching;
         // The list that will be drawn by the UI
-        public ObservableCollection<FileItem> SearchResults { get; } = new();
+        public VirtualResultList SearchResults { get; } = new();
+        // The "DB" in RAM
+        private readonly FileDatabase _database = new();
+        // Pre-take the memory instance
+        private int[] _searchBuffer = Array.Empty<int>();
+
+
+
+        // ------------------------------ //
+        //          CONSTRUCTOR           //
+        // ------------------------------ //
+        public MainWindowViewModel()
+        {
+            // --- SIMULATION ---
+            // Initialize the app by creating 4 million fake files
+            GenerateFakeDataBase();
+        }
 
 
 
@@ -31,29 +48,33 @@ namespace Lynx.ViewModels
             // Set the searching flag true
             IsSearching = true;
 
-            // Clean previous results
-            SearchResults.Clear();
-
-            // --------- SIMULATION ---------
-            // Generate 10k fake files in a secondary thread
-            await Task.Run(async () =>
+            // Background search
+            var matchedCount = await Task.Run(() =>
             {
-                await Task.Delay(150); // Simulates disc reading time
-                var rand = new Random();
-                for (int i = 0; i < 1000000; i++)
+                int count = 0;
+
+                // Iterate over the 4 million fake files in struct
+                // As it is stored adjacently in memory, the CPU iterates fast
+                for (int i = 0; i < _database.Files.Length; i++)
                 {
-                    SearchResults.Add(new FileItem
+                    if (_database.Files[i].Name?.Contains(query, StringComparison.OrdinalIgnoreCase) == true)
                     {
-                        FileName = $"Archivo_Ultra_Rapido_{query}_{i}.txt",
-                        FilePath = $@"C:\Datos\{query}\Subcarpeta\",
-                        FileExtension = ".txt",
-                        FileSize = rand.Next()
-                    });
+                        _searchBuffer[count] = i;
+                        count++;
+                    }
                 }
+                return count;
             });
 
-            // Set the searching flag false
-            IsSearching = false;
+            // Update the UI
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                SearchResults.UpdateResults(_database, _searchBuffer, matchedCount);
+
+                // Set the searching flag false
+                IsSearching = false;
+            });
+            
         }
 
 
@@ -67,12 +88,39 @@ namespace Lynx.ViewModels
             // If there is no text in the field, clean the list
             if (string.IsNullOrWhiteSpace(value))
             {
-                SearchResults.Clear();
+                SearchResults.UpdateResults(_database, _searchBuffer, 0);
                 return;
             }
 
             // Start the search without blocking the UI
             PerformSearchCommand.Execute(value);
+        }
+
+        private void GenerateFakeDataBase()
+        {
+            int totalFakeFiles = 1_000_000;
+            _database.Files = new FileRecord[totalFakeFiles];
+
+            // Duplicate paths
+            _database.Paths[0] = @"C:\Windows\System32\";
+            _database.Paths[1] = @"C:\Users\Oscar\Documents\";
+            _database.Paths[2] = @"C:\Users\Oscar\Documents\";
+            _database.Paths[3] = @"C:\Users\Oscar\Documents\";
+            _database.Paths[4] = @"C:\Juegos\Steam\";
+            _database.Paths[5] = @"C:\Juegos\EpicGames\";
+            _database.Paths[6] = @"D:\Proyectos\";
+
+            var rand = new Random();
+
+            for (int i = 0; i < totalFakeFiles; i++)
+            {
+                // Shuffle the files between the 7 possible paths
+                int pathId = i % 7;
+                // Easy name
+                _database.Files[i] = new FileRecord($"archivo_{i}.txt", pathId, rand.Next());
+            }
+
+            _searchBuffer = new int[_database.Files.Length];
         }
     }
 }
