@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Lynx.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,7 +7,10 @@
         x:Class="Lynx.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Lynx">
+        Title="Lynx Search"
+        Width="900" Height="600"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -15,6 +18,55 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        
+        <TextBox Grid.Row="0" 
+                 Text="{Binding SearchQuery}" 
+                 Watermark="Empieza a escribir para buscar (ej. 'foto')..." 
+                 FontSize="22" 
+                 Padding="15,10"
+                 Background="#2D2D30"
+                 Foreground="White"
+                 BorderThickness="0"
+                 CornerRadius="8"/>
+
+        <ListBox Grid.Row="1" 
+                 ItemsSource="{Binding SearchResults}" 
+                 Margin="0,20,0,0"
+                 Background="Transparent"
+                 BorderThickness="0">
+            
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="Auto, *" Margin="5,8">
+                        <TextBlock Grid.Column="0" 
+                                   Text="📄" 
+                                   FontSize="28" 
+                                   VerticalAlignment="Center" 
+                                   Margin="0,0,15,0"/>
+                        
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding FileName}" 
+                                       FontWeight="SemiBold" 
+                                       FontSize="16" 
+                                       Foreground="#EAEAEA"/>
+                            <TextBlock Text="{Binding FilePath}" 
+                                       FontSize="13" 
+                                       Foreground="#888888" 
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="2" Margin="0,15,0,0">
+            <TextBlock Text="Buscando en la MFT..." 
+                       IsVisible="{Binding IsSearching}" 
+                       Foreground="#007ACC" 
+                       FontWeight="Bold"
+                       FontSize="14"/>
+        </Grid>
+    </Grid>
 
 </Window>

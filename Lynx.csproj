@@ -20,11 +20,10 @@
 	<RepositoryUrl>https://github.com/CompileMind/Lynx.git</RepositoryUrl>
 	<RepositoryType>git</RepositoryType>
 
-	<Version>0.0.1</Version>
+	<Version>0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
